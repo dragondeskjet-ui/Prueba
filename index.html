@@ -2,17 +2,23 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Emotive Engine - Visualizador Reactivo 3D</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emotive Engine 3D - Crystal Soul Audio Visualizer</title>
   <style>
+    :root {
+      --accent: #6ee7ff;
+      --accent-rgb: 110, 231, 255;
+    }
+    * { box-sizing: border-box; }
     body, html {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: radial-gradient(circle at center, #0f0c1b 0%, #05030a 100%);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: #fff;
+      background: radial-gradient(circle at center, #101f18 0%, #060b08 60%, #020403 100%);
     }
     #canvas-container {
       position: absolute;
@@ -27,28 +33,50 @@
       top: 24px;
       left: 24px;
       z-index: 10;
-      background: rgba(18, 14, 30, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      padding: 20px 24px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-      max-width: 340px;
+      background: rgba(10, 24, 18, 0.78);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(110, 231, 255, 0.25);
+      border-radius: 16px;
+      padding: 22px 26px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 30px rgba(110, 231, 255, 0.12);
+      max-width: 360px;
     }
     h1 {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       margin: 0 0 6px 0;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      background: linear-gradient(135deg, #00f2fe, #4facfe, #ff0844);
+      background: linear-gradient(135deg, #6ee7ff 0%, #a78bfa 50%, #f472b6 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
     p {
       font-size: 0.85rem;
-      color: #aaa;
+      color: #a0aec0;
       margin: 0 0 16px 0;
-      line-height: 1.4;
+      line-height: 1.45;
+    }
+    .shape-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .shape-btn {
+      flex: 1;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(110, 231, 255, 0.2);
+      color: #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .shape-btn.active, .shape-btn:hover {
+      background: rgba(110, 231, 255, 0.22);
+      border-color: #6ee7ff;
+      color: #6ee7ff;
     }
     .btn {
       display: inline-flex;
@@ -56,33 +84,35 @@
       justify-content: center;
       gap: 8px;
       width: 100%;
-      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-      color: #050510;
+      background: linear-gradient(135deg, #6ee7ff 0%, #3b82f6 100%);
+      color: #030a0d;
       border: none;
-      padding: 12px 16px;
-      border-radius: 8px;
+      padding: 13px 18px;
+      border-radius: 10px;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       cursor: pointer;
-      transition: transform 0.15s, opacity 0.15s;
+      box-shadow: 0 4px 15px rgba(110, 231, 255, 0.35);
+      transition: all 0.15s;
     }
     .btn:hover {
-      opacity: 0.92;
       transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(110, 231, 255, 0.5);
     }
     .stats {
       margin-top: 14px;
-      font-size: 0.75rem;
-      color: #777;
+      font-size: 0.78rem;
+      color: #718096;
       display: flex;
       justify-content: space-between;
+      align-items: center;
     }
     .pill {
       display: inline-block;
-      padding: 3px 8px;
+      padding: 3px 9px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #00f2fe;
+      background: rgba(110, 231, 255, 0.12);
+      color: #6ee7ff;
       font-weight: 600;
     }
   </style>
@@ -90,12 +120,20 @@
 </head>
 <body>
   <div id="ui">
-    <h1>Emotive 3D Core</h1>
-    <p>Visualizador interactivo WebGL / Three.js inspirado en el motor <strong>emotive-engine</strong> con shaders elementales reactivos.</p>
+    <h1>Emotive Engine 3D</h1>
+    <p>Visualizador reactivo oficial con <strong>CrystalSoul</strong>, refracción facetada y las geometrías procedurales de <em>emotive-engine</em>.</p>
+    
+    <div class="shape-selector">
+      <button class="shape-btn active" id="btn-crystal">Cristal</button>
+      <button class="shape-btn" id="btn-diamond">Diamante</button>
+      <button class="shape-btn" id="btn-sphere">Orbe</button>
+    </div>
+
     <button class="btn" id="playBtn">▶ Reproducir Canción</button>
+    
     <div class="stats">
       <span>Estado: <span id="statusTxt" class="pill">Pausa</span></span>
-      <span id="bpmTxt">Energía: 0%</span>
+      <span id="energyTxt">Energía: 0%</span>
     </div>
   </div>
 
@@ -103,10 +141,257 @@
   <audio id="audio" src="cancion.mp3" preload="auto"></audio>
 
   <script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GEOMETRÍAS PROCEDURALES DIRECTAS DE EMOTIVE-ENGINE (Crystal.js, Diamond.js, Sphere.js)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    function createCrystalGeometry(segments = 6) {
+      const vertices = [];
+      const normals = [];
+      const indices = [];
+      const height = 1.8;
+      const radius = 0.9;
+      const vertexMap = new Map();
+      let vertexIndex = 0;
+
+      function addVertex(x, y, z, nx, ny, nz) {
+        const key = `${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
+        if (!vertexMap.has(key)) {
+          vertices.push(x, y, z);
+          normals.push(nx, ny, nz);
+          vertexMap.set(key, vertexIndex++);
+        }
+        return vertexMap.get(key);
+      }
+
+      const topIndex = addVertex(0, height, 0, 0, 1, 0);
+      const midIndices = [];
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const idx = addVertex(x, 0, z, Math.cos(angle), 0, Math.sin(angle));
+        midIndices.push(idx);
+      }
+      const bottomIndex = addVertex(0, -height, 0, 0, -1, 0);
+
+      for (let i = 0; i < segments; i++) {
+        const next = (i + 1) % segments;
+        indices.push(topIndex, midIndices[i], midIndices[next]);
+      }
+      for (let i = 0; i < segments; i++) {
+        const next = (i + 1) % segments;
+        indices.push(midIndices[i], bottomIndex, midIndices[next]);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function createDiamondGeometry() {
+      const vertices = [];
+      const normals = [];
+      const indices = [];
+      const topHeight = 1.3;
+      const bottomHeight = -1.1;
+      const girdleSize = 1.0;
+      const segments = 8;
+      const topPoint = [0, topHeight, 0];
+      const bottomPoint = [0, bottomHeight, 0];
+      const girdlePoints = [];
+
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2;
+        girdlePoints.push([Math.cos(angle) * girdleSize, 0, Math.sin(angle) * girdleSize]);
+      }
+
+      function addTriangle(p1, p2, p3) {
+        const v1 = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]];
+        const v2 = [p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]];
+        const nx = v1[1] * v2[2] - v1[2] * v2[1];
+        const ny = v1[2] * v2[0] - v1[0] * v2[2];
+        const nz = v1[0] * v2[1] - v1[1] * v2[0];
+        const len = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
+        const normal = [nx/len, ny/len, nz/len];
+
+        const baseIdx = vertices.length / 3;
+        vertices.push(...p1, ...p2, ...p3);
+        normals.push(...normal, ...normal, ...normal);
+        indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
+      }
+
+      for (let i = 0; i < segments; i++) {
+        const next = (i + 1) % segments;
+        addTriangle(topPoint, girdlePoints[i], girdlePoints[next]);
+      }
+      for (let i = 0; i < segments; i++) {
+        const next = (i + 1) % segments;
+        addTriangle(girdlePoints[i], bottomPoint, girdlePoints[next]);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function createSphereGeometry() {
+      return new THREE.IcosahedronGeometry(1.2, 4);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // THREE.JS SCENE SETUP
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 5.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    container.appendChild(renderer.domElement);
+
+    // Luces
+    const ambLight = new THREE.AmbientLight(0x0a1a15, 2.5);
+    scene.add(ambLight);
+
+    const lightCyan = new THREE.PointLight(0x6ee7ff, 3.5, 30);
+    lightCyan.position.set(4, 5, 4);
+    scene.add(lightCyan);
+
+    const lightPurple = new THREE.PointLight(0xc084fc, 3.0, 30);
+    lightPurple.position.set(-4, -4, 3);
+    scene.add(lightPurple);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MATERIAL CRISTAL + SHADER "CRYSTAL SOUL" (Inclusión interna brillante)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const crystalMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x1a2e26,
+      emissive: 0x051a14,
+      metalness: 0.1,
+      roughness: 0.12,
+      transmission: 0.88,
+      thickness: 1.4,
+      ior: 1.6,
+      reflectivity: 0.9,
+      transparent: true,
+      opacity: 0.92
+    });
+
+    const wireframeMaterial = new THREE.MeshBasicMaterial({
+      color: 0x6ee7ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.35
+    });
+
+    // Mesh del Cristal principal
+    const crystalGeo = createCrystalGeometry(6);
+    const crystalMesh = new THREE.Mesh(crystalGeo, crystalMaterial);
+    scene.add(crystalMesh);
+
+    const wireMesh = new THREE.Mesh(crystalGeo, wireframeMaterial);
+    wireMesh.scale.set(1.02, 1.02, 1.02);
+    crystalMesh.add(wireMesh);
+
+    // Alma interna (Inner Soul - Emotive Engine)
+    const soulVertexShader = `
+      varying vec3 vNormal;
+      varying vec3 vViewPosition;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+        vViewPosition = -mvPos.xyz;
+        gl_Position = projectionMatrix * mvPos;
+      }
+    `;
+
+    const soulFragmentShader = `
+      uniform float uTime;
+      uniform vec3 uColor;
+      uniform float uIntensity;
+      varying vec3 vNormal;
+      varying vec3 vViewPosition;
+
+      void main() {
+        vec3 normal = normalize(vNormal);
+        vec3 viewDir = normalize(vViewPosition);
+        float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.5);
+        
+        float pulse = sin(uTime * 4.0) * 0.2 + 0.8;
+        vec3 glow = uColor * (fresnel * 1.5 + 0.4) * uIntensity * pulse;
+        gl_FragColor = vec4(glow, clamp(fresnel * 1.2 + 0.3, 0.0, 1.0));
+      }
+    `;
+
+    const soulUniforms = {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(0x6ee7ff) },
+      uIntensity: { value: 1.0 }
+    };
+
+    const soulMaterial = new THREE.ShaderMaterial({
+      vertexShader: soulVertexShader,
+      fragmentShader: soulFragmentShader,
+      uniforms: soulUniforms,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide
+    });
+
+    const soulGeo = new THREE.OctahedronGeometry(0.55, 2);
+    const soulMesh = new THREE.Mesh(soulGeo, soulMaterial);
+    crystalMesh.add(soulMesh);
+
+    // Sistema de selección de formas
+    const geometries = {
+      crystal: createCrystalGeometry(6),
+      diamond: createDiamondGeometry(),
+      sphere: createSphereGeometry()
+    };
+
+    function switchShape(shapeKey) {
+      const newGeo = geometries[shapeKey];
+      crystalMesh.geometry = newGeo;
+      wireMesh.geometry = newGeo;
+    }
+
+    document.getElementById('btn-crystal').onclick = (e) => {
+      document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      switchShape('crystal');
+    };
+    document.getElementById('btn-diamond').onclick = (e) => {
+      document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      switchShape('diamond');
+    };
+    document.getElementById('btn-sphere').onclick = (e) => {
+      document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      switchShape('sphere');
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SISTEMA DE AUDIO BRIDGE REACTIVO
+    // ═══════════════════════════════════════════════════════════════════════════
+
     const audio = document.getElementById('audio');
     const playBtn = document.getElementById('playBtn');
     const statusTxt = document.getElementById('statusTxt');
-    const bpmTxt = document.getElementById('bpmTxt');
+    const energyTxt = document.getElementById('energyTxt');
 
     let audioCtx, analyser, dataArray;
     let isPlaying = false;
@@ -116,7 +401,7 @@
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.85;
+      analyser.smoothingTimeConstant = 0.8;
 
       const source = audioCtx.createMediaElementSource(audio);
       source.connect(analyser);
@@ -126,199 +411,84 @@
 
     playBtn.addEventListener('click', () => {
       initAudio();
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       if (audio.paused) {
         audio.play();
         playBtn.innerText = '⏸ Pausar Canción';
-        statusTxt.innerText = 'En vivo';
-        statusTxt.style.color = '#00ff88';
+        statusTxt.innerText = 'Sonando';
+        statusTxt.style.color = '#6ee7ff';
         isPlaying = true;
       } else {
         audio.pause();
         playBtn.innerText = '▶ Reproducir Canción';
         statusTxt.innerText = 'Pausa';
-        statusTxt.style.color = '#00f2fe';
+        statusTxt.style.color = '#a0aec0';
         isPlaying = false;
       }
     });
 
-    // Three.js Scene Setup
-    const container = document.getElementById('canvas-container');
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x05030a, 0.0018);
+    // ═══════════════════════════════════════════════════════════════════════════
+    // LOOP DE ANIMACIÓN Y REACTIVIDAD
+    // ═══════════════════════════════════════════════════════════════════════════
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 0, 9);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(renderer.domElement);
-
-    // Iluminación
-    const ambientLight = new THREE.AmbientLight(0x221133, 1.5);
-    scene.add(ambientLight);
-
-    const pointLight = new THREE.PointLight(0x00f2fe, 3, 50);
-    pointLight.position.set(5, 8, 5);
-    scene.add(pointLight);
-
-    const pointLightPink = new THREE.PointLight(0xff0844, 3, 50);
-    pointLightPink.position.set(-5, -6, 5);
-    scene.add(pointLightPink);
-
-    // 1. Núcleo Icosaedro de Cristal Emotive
-    const coreGeo = new THREE.IcosahedronGeometry(2.4, 4);
-    const coreMat = new THREE.MeshPhysicalMaterial({
-      color: 0x110822,
-      emissive: 0x001133,
-      roughness: 0.1,
-      metalness: 0.9,
-      transmission: 0.6,
-      ior: 1.5,
-      wireframe: false
-    });
-    const core = new THREE.Mesh(coreGeo, coreMat);
-    scene.add(core);
-
-    // Malla de alambre externa (aura cristalina)
-    const wireMat = new THREE.MeshBasicMaterial({
-      color: 0x00f2fe,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.4
-    });
-    const wireMesh = new THREE.Mesh(coreGeo, wireMat);
-    wireMesh.scale.set(1.05, 1.05, 1.05);
-    core.add(wireMesh);
-
-    // Guardar vértices originales para deformación por ondas
-    const posAttr = coreGeo.attributes.position;
-    const origPositions = new Float32Array(posAttr.array);
-
-    // 2. Anillos Orbitales Giroscópicos
-    function createRing(radius, tube, color) {
-      const geo = new THREE.TorusGeometry(radius, tube, 16, 100);
-      const mat = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.6 });
-      return new THREE.Mesh(geo, mat);
-    }
-    const ring1 = createRing(3.8, 0.03, 0x00f2fe);
-    const ring2 = createRing(4.5, 0.02, 0xff0844);
-    const ring3 = createRing(5.2, 0.02, 0x8800ff);
-    scene.add(ring1);
-    scene.add(ring2);
-    scene.add(ring3);
-
-    // 3. Campo de Partículas Elementales 3D
-    const particleCount = 1800;
-    const particleGeo = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleColors = new Float32Array(particleCount * 3);
-
-    for (let i = 0; i < particleCount; i++) {
-      const rad = 4 + Math.random() * 22;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      
-      particlePositions[i * 3] = rad * Math.sin(phi) * Math.cos(theta);
-      particlePositions[i * 3 + 1] = rad * Math.sin(phi) * Math.sin(theta);
-      particlePositions[i * 3 + 2] = rad * Math.cos(phi);
-
-      particleColors[i * 3] = 0.2 + Math.random() * 0.8;
-      particleColors[i * 3 + 1] = 0.5 + Math.random() * 0.5;
-      particleColors[i * 3 + 2] = 1.0;
-    }
-
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-
-    const particleMat = new THREE.PointsMaterial({
-      size: 0.08,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.75,
-      blending: THREE.AdditiveBlending
-    });
-    const particles = new THREE.Points(particleGeo, particleMat);
-    scene.add(particles);
-
-    // Responsive
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Loop de renderizado
     let clock = new THREE.Clock();
 
     function animate() {
       requestAnimationFrame(animate);
       const time = clock.getElapsedTime();
+      soulUniforms.uTime.value = time;
 
       let bass = 0, mid = 0, treble = 0;
 
       if (analyser && isPlaying) {
         analyser.getByteFrequencyData(dataArray);
-
-        // Subdividimos el espectro
         let bSum = 0, mSum = 0, tSum = 0;
-        for (let i = 0; i < 16; i++) bSum += dataArray[i];
-        for (let i = 16; i < 96; i++) mSum += dataArray[i];
-        for (let i = 96; i < 220; i++) tSum += dataArray[i];
+        for (let i = 0; i < 14; i++) bSum += dataArray[i];
+        for (let i = 14; i < 80; i++) mSum += dataArray[i];
+        for (let i = 80; i < 200; i++) tSum += dataArray[i];
 
-        bass = (bSum / 16) / 255.0;
-        mid = (mSum / 80) / 255.0;
-        treble = (tSum / 124) / 255.0;
+        bass = (bSum / 14) / 255.0;
+        mid = (mSum / 66) / 255.0;
+        treble = (tSum / 120) / 255.0;
 
-        bpmTxt.innerText = `Energía: ${(bass * 100).toFixed(0)}%`;
+        energyTxt.innerText = `Energía: ${(bass * 100).toFixed(0)}%`;
       } else {
-        // Modo Idle
         bass = 0.15 + 0.1 * Math.sin(time * 2);
         mid = 0.1;
         treble = 0.1;
       }
 
-      // Rotación y latido del Núcleo Emotive
-      core.rotation.y = time * 0.4;
-      core.rotation.x = time * 0.25;
-      const targetScale = 1.0 + bass * 0.42;
-      core.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.2);
+      // 1. Accionar el Cristal con la música (Rotación + Pulso de Escala)
+      crystalMesh.rotation.y = time * 0.45 + (bass * 0.5);
+      crystalMesh.rotation.z = Math.sin(time * 0.8) * 0.15;
 
-      // Deformación de vértices por audio (efecto de pulsación orgánica)
-      const positions = coreGeo.attributes.position.array;
-      for (let i = 0; i < positions.length; i += 3) {
-        const ox = origPositions[i];
-        const oy = origPositions[i+1];
-        const oz = origPositions[i+2];
-        const wave = Math.sin(ox * 2.0 + oy * 2.0 + time * 6.0) * (bass * 0.35 + mid * 0.15);
-        positions[i] = ox + (ox / 2.4) * wave;
-        positions[i+1] = oy + (oy / 2.4) * wave;
-        positions[i+2] = oz + (oz / 2.4) * wave;
-      }
-      coreGeo.attributes.position.needsUpdate = true;
-      coreGeo.computeVertexNormals();
+      const scale = 1.0 + (bass * 0.35);
+      crystalMesh.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.25);
 
-      // Cambiar color emissive según emoción/frecuencia
-      coreMat.emissive.setRGB(bass * 0.8, mid * 0.2, treble * 0.9);
-      wireMat.color.setRGB(0.2 + bass * 0.8, 0.8, 0.9 + treble * 0.1);
+      // 2. Accionar el Alma interna (Crystal Soul)
+      const soulScale = 1.0 + (mid * 0.8 + bass * 0.5);
+      soulMesh.scale.set(soulScale, soulScale, soulScale);
+      soulMesh.rotation.x = -time * 1.2;
+      soulMesh.rotation.y = time * 1.5;
 
-      // Rotación diferencial de los anillos
-      ring1.rotation.x = time * 0.6;
-      ring1.rotation.y = time * 0.3;
-      ring2.rotation.y = -time * 0.5;
-      ring2.rotation.z = time * 0.4;
-      ring3.rotation.z = time * 0.7;
-      ring3.rotation.x = -time * 0.3;
+      // Color dinámico de emoción basado en frecuencia
+      const r = Math.min(1.0, 0.2 + bass * 0.8);
+      const g = Math.min(1.0, 0.6 + treble * 0.4);
+      const b = Math.min(1.0, 0.9 + mid * 0.1);
+      soulUniforms.uColor.value.setRGB(r, g, b);
+      soulUniforms.uIntensity.value = 1.0 + bass * 2.5;
 
-      // Partículas
-      particles.rotation.y = time * 0.05 + bass * 0.02;
-      particles.rotation.x = time * 0.03;
+      // Color de emisión del cristal
+      crystalMaterial.emissive.setRGB(bass * 0.25, treble * 0.1, mid * 0.3);
 
       renderer.render(scene, camera);
     }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
     animate();
   </script>
