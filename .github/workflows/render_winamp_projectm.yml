@@ -1,0 +1,36 @@
+name: Render Winamp MilkDrop MP4
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - prueba
+
+jobs:
+  render-milkdrop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install ProjectM & Headless GStreamer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg xvfb libprojectm-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-projectm gstreamer1.0-tools
+
+      - name: Render Music with Official Winamp MilkDrop / projectM
+        run: |
+          xvfb-run -s "-screen 0 1920x1080x24" gst-launch-1.0 -e \
+            filesrc location=cancion.mp3 ! decodebin name=dec \
+            dec. ! queue ! audioconvert ! projectm ! videoconvert ! x264enc bitrate=8000 tune=zerolatency ! mp4mux name=mux ! filesink location=winamp_milkdrop_official.mp4 \
+            dec. ! queue ! audioconvert ! voaacenc bitrate=256000 ! mux.
+
+          ls -lh winamp_milkdrop_official.mp4
+
+      - name: Upload Winamp MP4 Video
+        uses: actions/upload-artifact@v4
+        with:
+          name: winamp-milkdrop-official-video
+          path: winamp_milkdrop_official.mp4
+          retention-days: 14
