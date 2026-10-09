@@ -1,0 +1,52 @@
+name: Render Visualizer MP4
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - prueba
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg & Build Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg build-essential
+
+      - name: Compile C Visualizer
+        run: |
+          gcc -O3 -Wall itunes_winamp_visualizer.c -o visualizer_c -lm
+
+      - name: Adapt script to system FFmpeg
+        run: |
+          # En Ubuntu, ffmpeg está en /usr/bin/ffmpeg
+          sudo ln -sf /usr/bin/ffmpeg /tmp/ffmpeg
+
+      - name: Render MP4 Video
+        run: |
+          ./visualizer_c
+          ls -lh cancion_itunes_winamp.mp4
+
+      - name: Upload Video as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cancion-itunes-winamp-video
+          path: cancion_itunes_winamp.mp4
+          retention-days: 14
+
+      - name: Create Release with MP4
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/prueba'
+        with:
+          tag_name: v1.0.0-video
+          name: "Video MP4 - Visualizador iTunes/Winamp"
+          body: "Renderizado automático en 1080p Full HD generado por GitHub Actions con el código en C."
+          files: cancion_itunes_winamp.mp4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
