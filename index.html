@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Emotive Engine - Visualizador Reactivo 3D</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #0f0c1b 0%, #05030a 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #fff;
+    }
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    #ui {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      z-index: 10;
+      background: rgba(18, 14, 30, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 20px 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      max-width: 340px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      margin: 0 0 6px 0;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #00f2fe, #4facfe, #ff0844);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin: 0 0 16px 0;
+      line-height: 1.4;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+      color: #050510;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .btn:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+    .stats {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: #777;
+      display: flex;
+      justify-content: space-between;
+    }
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #00f2fe;
+      font-weight: 600;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div id="ui">
+    <h1>Emotive 3D Core</h1>
+    <p>Visualizador interactivo WebGL / Three.js inspirado en el motor <strong>emotive-engine</strong> con shaders elementales reactivos.</p>
+    <button class="btn" id="playBtn">▶ Reproducir Canción</button>
+    <div class="stats">
+      <span>Estado: <span id="statusTxt" class="pill">Pausa</span></span>
+      <span id="bpmTxt">Energía: 0%</span>
+    </div>
+  </div>
+
+  <div id="canvas-container"></div>
+  <audio id="audio" src="cancion.mp3" preload="auto"></audio>
+
+  <script>
+    const audio = document.getElementById('audio');
+    const playBtn = document.getElementById('playBtn');
+    const statusTxt = document.getElementById('statusTxt');
+    const bpmTxt = document.getElementById('bpmTxt');
+
+    let audioCtx, analyser, dataArray;
+    let isPlaying = false;
+
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.85;
+
+      const source = audioCtx.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+    }
+
+    playBtn.addEventListener('click', () => {
+      initAudio();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      if (audio.paused) {
+        audio.play();
+        playBtn.innerText = '⏸ Pausar Canción';
+        statusTxt.innerText = 'En vivo';
+        statusTxt.style.color = '#00ff88';
+        isPlaying = true;
+      } else {
+        audio.pause();
+        playBtn.innerText = '▶ Reproducir Canción';
+        statusTxt.innerText = 'Pausa';
+        statusTxt.style.color = '#00f2fe';
+        isPlaying = false;
+      }
+    });
+
+    // Three.js Scene Setup
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x05030a, 0.0018);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 9);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Iluminación
+    const ambientLight = new THREE.AmbientLight(0x221133, 1.5);
+    scene.add(ambientLight);
+
+    const pointLight = new THREE.PointLight(0x00f2fe, 3, 50);
+    pointLight.position.set(5, 8, 5);
+    scene.add(pointLight);
+
+    const pointLightPink = new THREE.PointLight(0xff0844, 3, 50);
+    pointLightPink.position.set(-5, -6, 5);
+    scene.add(pointLightPink);
+
+    // 1. Núcleo Icosaedro de Cristal Emotive
+    const coreGeo = new THREE.IcosahedronGeometry(2.4, 4);
+    const coreMat = new THREE.MeshPhysicalMaterial({
+      color: 0x110822,
+      emissive: 0x001133,
+      roughness: 0.1,
+      metalness: 0.9,
+      transmission: 0.6,
+      ior: 1.5,
+      wireframe: false
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    scene.add(core);
+
+    // Malla de alambre externa (aura cristalina)
+    const wireMat = new THREE.MeshBasicMaterial({
+      color: 0x00f2fe,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.4
+    });
+    const wireMesh = new THREE.Mesh(coreGeo, wireMat);
+    wireMesh.scale.set(1.05, 1.05, 1.05);
+    core.add(wireMesh);
+
+    // Guardar vértices originales para deformación por ondas
+    const posAttr = coreGeo.attributes.position;
+    const origPositions = new Float32Array(posAttr.array);
+
+    // 2. Anillos Orbitales Giroscópicos
+    function createRing(radius, tube, color) {
+      const geo = new THREE.TorusGeometry(radius, tube, 16, 100);
+      const mat = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.6 });
+      return new THREE.Mesh(geo, mat);
+    }
+    const ring1 = createRing(3.8, 0.03, 0x00f2fe);
+    const ring2 = createRing(4.5, 0.02, 0xff0844);
+    const ring3 = createRing(5.2, 0.02, 0x8800ff);
+    scene.add(ring1);
+    scene.add(ring2);
+    scene.add(ring3);
+
+    // 3. Campo de Partículas Elementales 3D
+    const particleCount = 1800;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleColors = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount; i++) {
+      const rad = 4 + Math.random() * 22;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      
+      particlePositions[i * 3] = rad * Math.sin(phi) * Math.cos(theta);
+      particlePositions[i * 3 + 1] = rad * Math.sin(phi) * Math.sin(theta);
+      particlePositions[i * 3 + 2] = rad * Math.cos(phi);
+
+      particleColors[i * 3] = 0.2 + Math.random() * 0.8;
+      particleColors[i * 3 + 1] = 0.5 + Math.random() * 0.5;
+      particleColors[i * 3 + 2] = 1.0;
+    }
+
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+      size: 0.08,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending
+    });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
+    // Responsive
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Loop de renderizado
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const time = clock.getElapsedTime();
+
+      let bass = 0, mid = 0, treble = 0;
+
+      if (analyser && isPlaying) {
+        analyser.getByteFrequencyData(dataArray);
+
+        // Subdividimos el espectro
+        let bSum = 0, mSum = 0, tSum = 0;
+        for (let i = 0; i < 16; i++) bSum += dataArray[i];
+        for (let i = 16; i < 96; i++) mSum += dataArray[i];
+        for (let i = 96; i < 220; i++) tSum += dataArray[i];
+
+        bass = (bSum / 16) / 255.0;
+        mid = (mSum / 80) / 255.0;
+        treble = (tSum / 124) / 255.0;
+
+        bpmTxt.innerText = `Energía: ${(bass * 100).toFixed(0)}%`;
+      } else {
+        // Modo Idle
+        bass = 0.15 + 0.1 * Math.sin(time * 2);
+        mid = 0.1;
+        treble = 0.1;
+      }
+
+      // Rotación y latido del Núcleo Emotive
+      core.rotation.y = time * 0.4;
+      core.rotation.x = time * 0.25;
+      const targetScale = 1.0 + bass * 0.42;
+      core.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.2);
+
+      // Deformación de vértices por audio (efecto de pulsación orgánica)
+      const positions = coreGeo.attributes.position.array;
+      for (let i = 0; i < positions.length; i += 3) {
+        const ox = origPositions[i];
+        const oy = origPositions[i+1];
+        const oz = origPositions[i+2];
+        const wave = Math.sin(ox * 2.0 + oy * 2.0 + time * 6.0) * (bass * 0.35 + mid * 0.15);
+        positions[i] = ox + (ox / 2.4) * wave;
+        positions[i+1] = oy + (oy / 2.4) * wave;
+        positions[i+2] = oz + (oz / 2.4) * wave;
+      }
+      coreGeo.attributes.position.needsUpdate = true;
+      coreGeo.computeVertexNormals();
+
+      // Cambiar color emissive según emoción/frecuencia
+      coreMat.emissive.setRGB(bass * 0.8, mid * 0.2, treble * 0.9);
+      wireMat.color.setRGB(0.2 + bass * 0.8, 0.8, 0.9 + treble * 0.1);
+
+      // Rotación diferencial de los anillos
+      ring1.rotation.x = time * 0.6;
+      ring1.rotation.y = time * 0.3;
+      ring2.rotation.y = -time * 0.5;
+      ring2.rotation.z = time * 0.4;
+      ring3.rotation.z = time * 0.7;
+      ring3.rotation.x = -time * 0.3;
+
+      // Partículas
+      particles.rotation.y = time * 0.05 + bass * 0.02;
+      particles.rotation.x = time * 0.03;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
