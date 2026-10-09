@@ -1,0 +1,35 @@
+name: Render Winamp AVS Classic MP4
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - prueba
+
+permissions:
+  contents: write
+
+jobs:
+  render-avs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python & FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3-pip python3-numpy
+
+      - name: Render Winamp AVS Video
+        run: |
+          python3 render_winamp_avs.py
+          ls -lh video_winamp_avs_classic.mp4
+
+      - name: Upload Winamp AVS MP4 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-winamp-avs-classic-mp4
+          path: video_winamp_avs_classic.mp4
+          retention-days: 14
