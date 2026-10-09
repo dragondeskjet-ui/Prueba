@@ -6,6 +6,9 @@ on:
     branches:
       - prueba
 
+permissions:
+  contents: write
+
 jobs:
   render:
     runs-on: ubuntu-latest
@@ -25,7 +28,6 @@ jobs:
 
       - name: Adapt script to system FFmpeg
         run: |
-          # En Ubuntu, ffmpeg está en /usr/bin/ffmpeg
           sudo ln -sf /usr/bin/ffmpeg /tmp/ffmpeg
 
       - name: Render MP4 Video
@@ -39,14 +41,3 @@ jobs:
           name: cancion-itunes-winamp-video
           path: cancion_itunes_winamp.mp4
           retention-days: 14
-
-      - name: Create Release with MP4
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/prueba'
-        with:
-          tag_name: v1.0.0-video
-          name: "Video MP4 - Visualizador iTunes/Winamp"
-          body: "Renderizado automático en 1080p Full HD generado por GitHub Actions con el código en C."
-          files: cancion_itunes_winamp.mp4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
