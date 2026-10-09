@@ -1,0 +1,42 @@
+name: Render Videos 2 y 3 (Tunnel & Plasma)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - prueba
+
+permissions:
+  contents: write
+
+jobs:
+  render-both-videos:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python & FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3-pip python3-numpy
+
+      - name: Render Video 2 (Túnel Fractal Hipnótico)
+        run: |
+          python3 render_tunnel_fractal.py
+          ls -lh video_2_tunnel_fractal.mp4
+
+      - name: Render Video 3 (Ondas de Plasma & Rayos Eléctricos)
+        run: |
+          python3 render_plasma_electricity.py
+          ls -lh video_3_plasma_electricity.mp4
+
+      - name: Upload Both MP4 Videos as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-mp4-tunnel-and-plasma
+          path: |
+            video_2_tunnel_fractal.mp4
+            video_3_plasma_electricity.mp4
+          retention-days: 14
